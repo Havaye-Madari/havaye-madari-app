@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت پیوست - {{ participant.name }}{% endblock %}
+
+{% block content %}
+<h2 class="section-title mb-4">مدیریت فایل پیوست برای: {{ participant.name }} ({{ participant.phone }})</h2>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% include '_flash_messages.html' ignore missing %}
+--- END REMOVED --- #}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">فایل پیوست فعلی</h5>
+    </div>
+    <div class="card-body">
+        {% if participant.attachment_filename %}
+            <p>فایل فعلی:
+                {# Link to view/download the file #}
+                <a href="{{ url_for('participants.view_attachment', filename=participant.attachment_filename) }}" target="_blank">
+                    {{ participant.attachment_filename }}
+                </a>
+            </p>
+            {# Form to delete the current attachment #}
+            <form action="{{ url_for('participants.delete_attachment', phone=participant.phone) }}" method="POST" class="d-inline" onsubmit="return confirm('آیا از حذف این فایل پیوست مطمئن هستید؟');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash-alt me-1"></i> حذف فایل فعلی
+                </button>
+            </form>
+        {% else %}
+            <p class="text-muted">در حال حاضر هیچ فایل پیوستی برای این شرکت‌کننده وجود ندارد.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+         <h5 class="mb-0">آپلود فایل پیوست جدید</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small">فایل جدید جایگزین فایل فعلی (در صورت وجود) خواهد شد. فرمت‌های مجاز: PDF, JPG, JPEG, PNG, GIF.</p>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('participants.manage_attachment', phone=participant.phone) }}">
+            {{ form.hidden_tag() }} {# CSRF token #}
+            <div class="mb-3">
+                {{ form.attachment.label(class="form-label") }}
+                {{ form.attachment(class="form-control" + (" is-invalid" if form.attachment.errors else "")) }}
+                {% if form.attachment.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.attachment.errors %}
+                            <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary ms-2">بازگشت به لیست</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

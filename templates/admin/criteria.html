@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}مدیریت معیارها{% endblock %}
+{% block content %}
+<h2>مدیریت معیارها</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.name.label }} {{ form.name(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.weight.label }} {{ form.weight(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.description.label }} {{ form.description(class="form-control", rows=3) }}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+<hr>
+<h3>لیست معیارها</h3>
+<ul class="list-group">
+    {% for c in criteria %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span><strong>{{ c.name }}</strong> (وزن: {{ c.weight }})</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

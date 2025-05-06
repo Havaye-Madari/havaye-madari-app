@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}خلاصه نتایج ارزیابی{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .chart-container { position: relative; margin: 20px auto; max-width: 650px; width: 90%; aspect-ratio: 4/3; margin-bottom: 2rem; border: 1px solid #eee; padding: 10px; background-color: #fff; }
+    .axis-header { background-color: #e9ecef; padding: 0.75rem 1.25rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .table th, .table td { vertical-align: middle; }
+    canvas { display: block; box-sizing: border-box; height: 100%; width: 100%; }
+    .help-button-container { position: absolute; top: 15px; left: 15px; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+{# Help Button Container #}
+<div class="position-relative mb-4">
+    <h2 class="section-title mb-0">خلاصه نتایج ارزیابی</h2>
+    {# Help Button #}
+    {% if help_text %}
+    <div class="help-button-container">
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill" data-bs-toggle="modal" data-bs-target="#helpModal">
+            <i class="fas fa-question-circle me-1"></i> راهنما
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<p class="text-muted">این صفحه نتایج میانگین امتیازات کسب شده توسط تمام شرکت‌کنندگان ({{ summary_data.total_participants }} نفر) را به تفکیک محور و شاخص نمایش می‌دهد.</p>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% include '_flash_messages.html' ignore missing %}
+--- END REMOVED --- #}
+
+{# Overall Average Score #}
+<div class="alert alert-info d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">میانگین کل امتیازات (بر اساس میانگین وزنی شاخص‌ها):</h5>
+    <span class="badge bg-primary fs-5">{{ "%.2f"|format(summary_data.overall_score) }} / 5</span>
+</div>
+
+
+{# Table of Average Scores per Indicator/Axis #}
+<h3 class="section-title mt-5">جدول میانگین امتیازات</h3>
+<div class="card shadow-sm mb-5">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>محور / شاخص</th>
+                        <th class="text-center">وزن شاخص</th>
+                        <th class="text-center">میانگین امتیاز (از 5)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if summary_data.axes %}
+                        {% for axis in summary_data.axes %}
+                            <tr class="table-secondary">
+                                <td colspan="2"><strong>محور: {{ axis.name }}</strong></td>
+                                <td class="text-center"><strong>{{ "%.2f"|format(axis.axis_score) }}</strong></td>
+                            </tr>
+                            {% for indicator in axis.indicators %}
+                            <tr>
+                                <td class="ps-4">{{ indicator.name }}</td>
+                                <td class="text-center">{{ indicator.weight }}</td>
+                                <td class="text-center">{{ "%.2f"|format(indicator.score) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">هنوز هیچ محور یا شاخص فعالی برای نمایش نتایج وجود ندارد.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+                 <tfoot>
+                     <tr class="table-info">
+                         <td colspan="2" class="text-end"><strong>میانگین کل وزنی:</strong></td>
+                         <td class="text-center"><strong>{{ "%.2f"|format(summary_data.overall_score) }}</strong></td>
+                     </tr>
+                 </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Charts Section #}
+<h3 class="section-title mt-5">نمودارهای نتایج</h3>
+<div class="row">
+    {% if summary_data.axes %}
+        {% for axis in summary_data.axes %}
+            {% if axis.indicators %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header axis-header">
+                            <h5 class="mb-0 text-center">محور: {{ axis.name }}</h5>
+                        </div>
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <div class="chart-container">
+                                <canvas id="chart-axis-{{ axis.id }}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {% if not summary_data.axes | selectattr('indicators') | list %}
+         <div class="col-12"><div class="alert alert-warning text-center">هیچ شاخص فعالی برای رسم نمودار در محورهای موجود یافت نشد.</div></div>
+        {% endif %}
+    {% else %}
+        <div class="col-12"><div class="alert alert-warning text-center">داده‌ای برای رسم نمودار وجود ندارد.</div></div>
+    {% endif %}
+</div>
+
+{# Help Modal #}
+{% if help_text %}
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel"><i class="fas fa-info-circle me-2"></i> راهنمای صفحه نتایج</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="white-space: pre-wrap;">
+        {{ help_text | safe }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Chart rendering script remains the same
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM loaded. Attempting to render charts.");
+        if (typeof Chart === 'undefined') { console.error("Chart.js library is not loaded."); return; }
+        let chartData; try { chartData = {{ chart_data_json | safe }}; if (typeof chartData !== 'object' || chartData === null) throw new Error("Chart data is not valid."); console.log("Chart Data Parsed:", chartData); } catch (e) { console.error("Error parsing chart data JSON:", e); const cs = document.querySelector('.row'); if(cs) cs.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center">خطا در بارگذاری داده‌های نمودار.</div></div>'; return; } if (Object.keys(chartData).length === 0) { console.warn("Chart data object is empty."); return; }
+        for (const axisId in chartData) { if (chartData.hasOwnProperty(axisId)) { const axisData = chartData[axisId]; const canvasId = `chart-axis-${axisId}`; const ctx = document.getElementById(canvasId); console.log(`Processing Axis ID: ${axisId}, Name: ${axisData.name}`); if (!ctx) { console.error(`Canvas element with ID ${canvasId} not found.`); continue; } const labels = axisData.labels; const avgScores = axisData.participant_or_avg_scores; const overallAvgScores = axisData.overall_indicator_averages; if (!labels || labels.length === 0 || !avgScores || avgScores.length === 0 || !overallAvgScores || overallAvgScores.length === 0 || labels.length !== avgScores.length || labels.length !== overallAvgScores.length) { console.warn(`Inconsistent data for axis ${axisData.name}. Skipping chart.`, axisData); const context = ctx.getContext('2d'); context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#6c757d"; context.fillText("داده‌های این نمودار ناقص است.", ctx.canvas.width / 2, ctx.canvas.height / 2); continue; } let chartType = (labels.length > 2) ? 'radar' : 'bar'; console.log(`Creating ${chartType} chart for Axis ID: ${axisId}`); const datasets = [{ label: `میانگین محور: ${axisData.name}`, data: avgScores, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgb(54, 162, 235)', borderWidth: 1.5, pointBackgroundColor: 'rgb(54, 162, 235)', order: 1 }]; const config = { type: chartType, data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Vazirmatn' } } }, title: { display: false }, tooltip: { bodyFont: { family: 'Vazirmatn' }, titleFont: { family: 'Vazirmatn' } } }, scales: { r: (chartType === 'radar') ? { beginAtZero: true, max: 5, angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, grid: { color: 'rgba(0, 0, 0, 0.1)' }, pointLabels: { font: { size: 11, family: 'Vazirmatn' } }, ticks: { stepSize: 1, backdropColor: 'rgba(255, 255, 255, 0.75)', font: { family: 'Vazirmatn'} } } : undefined, y: (chartType === 'bar') ? { beginAtZero: true, max: 5, grid: { color: 'rgba(0, 0, 0, 0.1)' }, ticks: { stepSize: 1, font: { family: 'Vazirmatn' } } } : undefined, x: (chartType === 'bar') ? { grid: { display: false }, ticks: { font: { family: 'Vazirmatn' } } } : undefined } } }; try { const existingChart = Chart.getChart(canvasId); if (existingChart) { existingChart.destroy(); } new Chart(ctx, config); console.log(`Chart ${canvasId} created.`); } catch (e) { console.error(`Error creating chart for axis ${axisId}:`, e); const context = ctx.getContext('2d'); context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#dc3545"; context.fillText("خطا در رسم نمودار.", ctx.canvas.width / 2, ctx.canvas.height / 2); } } } });
+</script>
+{% endblock %}

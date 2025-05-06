@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{# Dynamically set title based on whether we are editing or adding #}
+{% block title %}
+    {% if editing %}
+        ویرایش امتیازات - {{ participant_form.name.data }}
+    {% else %}
+        افزودن شرکت‌کننده و امتیازات
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+{# Dynamically set heading based on mode #}
+<h2 class="section-title mb-4">
+    {% if editing %}
+        ویرایش امتیازات شرکت‌کننده: {{ participant_form.name.data }} ({{ participant_form.phone.data }})
+    {% else %}
+        افزودن شرکت‌کننده و ثبت امتیازات
+    {% endif %}
+</h2>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% include '_flash_messages.html' ignore missing %}
+--- END REMOVED --- #}
+
+{# The form action points to the same route, handling both add and edit #}
+<form method="POST" action="{{ url_for('participants.manage_scores', phone=participant_form.phone.data if editing else None) }}">
+    {{ participant_form.hidden_tag() }} {# CSRF token #}
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header"><h5 class="mb-0">اطلاعات شرکت‌کننده</h5></div>
+        <div class="card-body">
+             <div class="row">
+                 <div class="col-md-6 mb-3">
+                     {{ participant_form.phone.label(class="form-label") }}
+                     {{ participant_form.phone(class="form-control" + (" is-invalid" if participant_form.phone.errors else ""), placeholder="شماره تلفن...", readonly=editing) }}
+                     {% if participant_form.phone.errors %}<div class="invalid-feedback d-block">{{ participant_form.phone.errors[0] }}</div>{% endif %}
+                     {% if editing %}<small class="form-text text-muted">شماره تلفن قابل ویرایش نیست.</small>{% endif %}
+                 </div>
+                 <div class="col-md-6 mb-3">
+                     {{ participant_form.name.label(class="form-label") }}
+                     {{ participant_form.name(class="form-control" + (" is-invalid" if participant_form.name.errors else ""), placeholder="نام و نام خانوادگی...") }}
+                     {% if participant_form.name.errors %}<div class="invalid-feedback d-block">{{ participant_form.name.errors[0] }}</div>{% endif %}
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header"><h5 class="mb-0">ثبت / ویرایش امتیازات (0 تا 5)</h5></div>
+        <div class="card-body">
+            {# Check if score_form has fields before iterating #}
+            {% set score_fields = score_form | list | rejectattr('type', 'equalto', 'SubmitField') | rejectattr('type', 'equalto', 'CSRFTokenField') | rejectattr('type', 'equalto', 'HiddenField') | list %}
+
+            {% if score_form and score_fields | length > 0 %}
+                {% for field in score_fields %}
+                <div class="mb-3 row align-items-center border-bottom pb-3 pt-2">
+                    {# Field Label #}
+                    <label for="{{ field.id }}" class="col-md-5 col-form-label">{{ field.label.text }}</label>
+                    {# Field Input #}
+                    <div class="col-md-7">
+                        {{ field(class="form-control" + (" is-invalid" if field.errors else ""), type="number", step="0.1", min="0", max="5") }}
+                        {% if field.errors %}
+                            <div class="invalid-feedback d-block">{{ field.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %} {# End of loop for score fields #}
+
+                {# Submit Button #}
+                <div class="mt-4">
+                    {{ score_form.submit(class="btn btn-success btn-lg px-4") }}
+                    <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary btn-lg px-4 ms-2">لغو</a>
+                </div>
+
+            {% else %}
+                 <div class="alert alert-warning">
+                     هیچ سنجه یا شاخص فعالی برای امتیازدهی یافت نشد. لطفاً ابتدا از بخش
+                     <a href="{{ url_for('admin.manage_hierarchy') }}" class="alert-link">مدیریت ساختار ارزیابی</a>،
+                     آیتم‌ها را تعریف و فعال کنید.
+                 </div>
+                 <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary mt-3">بازگشت به لیست</a>
+            {% endif %}
+        </div>
+    </div>
+
+</form>
+{% endblock %}
