@@ -5,7 +5,28 @@
 {% block styles %}
 {{ super() }}
 <style>
-    .chart-container { position: relative; margin: 20px auto; max-width: 650px; width: 90%; aspect-ratio: 4/3; margin-bottom: 2rem; border: 1px solid #eee; padding: 10px; background-color: #fff; }
+    .chart-container {
+        position: relative;
+        margin: 20px auto;
+        max-width: 600px; /* Slightly reduced max-width for better mobile scaling */
+        width: 100%; /* Changed to 100% to better fit smaller screens */
+        aspect-ratio: 1 / 1; /* Radar charts often look better with 1/1 aspect ratio */
+        margin-bottom: 2rem;
+        border: 1px solid #eee;
+        padding: 10px;
+        background-color: #fff;
+    }
+    .bar-chart-container { /* Specific container for bar charts if needed */
+        position: relative;
+        margin: 20px auto;
+        max-width: 600px;
+        width: 100%;
+        aspect-ratio: 4 / 3; /* Bar charts can use a different aspect ratio */
+        margin-bottom: 2rem;
+        border: 1px solid #eee;
+        padding: 10px;
+        background-color: #fff;
+    }
     .axis-header { background-color: #e9ecef; padding: 0.75rem 1.25rem; border-radius: 0.5rem; margin-bottom: 1rem; }
     .table th, .table td { vertical-align: middle; }
     canvas { display: block; box-sizing: border-box; height: 100%; width: 100%; }
@@ -43,10 +64,6 @@
         {% else %}
             <p class="text-muted">این صفحه امتیازات کسب شده توسط این شرکت‌کننده را به تفکیک محور و شاخص نمایش می‌دهد.</p>
         {% endif %}
-
-        {# --- REMOVED: Duplicate flash message include ---
-        {% include '_flash_messages.html' ignore missing %}
-        --- END REMOVED --- #}
 
         {# Overall Score #}
         <div class="alert alert-info d-flex justify-content-between align-items-center mt-4">
@@ -114,13 +131,14 @@
             {% if summary_data.axes %}
                 {% for axis in summary_data.axes %}
                      {% if axis.indicators %}
-                        <div class="col-lg-6 mb-4">
+                        <div class="col-lg-6 mb-4"> {# Each chart takes half width on large screens, full on smaller #}
                             <div class="card shadow-sm h-100">
                                 <div class="card-header axis-header">
                                     <h5 class="mb-0 text-center">محور: {{ axis.name }}</h5>
                                 </div>
                                 <div class="card-body d-flex justify-content-center align-items-center">
-                                    <div class="chart-container">
+                                    {# --- UPDATED: Use different container class based on chart type for different aspect ratio --- #}
+                                    <div class="{{ 'chart-container' if axis.indicators|length > 2 else 'bar-chart-container' }}">
                                         <canvas id="chart-axis-{{ axis.id }}"></canvas>
                                     </div>
                                 </div>
@@ -187,24 +205,153 @@
   </div>
 </div>
 {% endif %}
-{# End Help Modal #}
 
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
-{# Ensure Chart.js is loaded #}
 {% if is_participant_view %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 {% endif %}
 
 <script>
-    // Chart rendering script remains the same
     document.addEventListener('DOMContentLoaded', function() {
         console.log("DOM loaded. Attempting to render charts for participant.");
         const isParticipantView = {{ is_participant_view | tojson }};
-        if (typeof Chart === 'undefined') { console.error("Chart.js library is not loaded."); return; }
-        let chartData; try { chartData = {{ chart_data_json | safe }}; if (typeof chartData !== 'object' || chartData === null) throw new Error("Chart data is not valid."); console.log("Participant Chart Data Parsed:", chartData); } catch (e) { console.error("Error parsing chart data JSON:", e); const cs = document.querySelector('.row'); if(cs) cs.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center">خطا در بارگذاری داده‌های نمودار.</div></div>'; return; } const participantName = {{ summary_data.participant.name | tojson | safe }}; if (Object.keys(chartData).length === 0) { console.warn("Participant chart data object is empty."); }
-        for (const axisId in chartData) { if (chartData.hasOwnProperty(axisId)) { const axisData = chartData[axisId]; const canvasId = `chart-axis-${axisId}`; const ctx = document.getElementById(canvasId); console.log(`Processing Axis ID: ${axisId}, Name: ${axisData.name} for participant`); if (!ctx) { console.error(`Canvas element with ID ${canvasId} not found.`); continue; } const labels = axisData.labels; const participantScores = axisData.participant_or_avg_scores; const overallAvgScores = axisData.overall_indicator_averages; if (!labels || labels.length === 0 || !participantScores || participantScores.length === 0 || !overallAvgScores || overallAvgScores.length === 0 || labels.length !== participantScores.length || labels.length !== overallAvgScores.length) { console.warn(`Inconsistent data for axis ${axisData.name}. Skipping chart.`, axisData); const context = ctx.getContext('2d'); context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#6c757d"; context.fillText("داده‌های این نمودار ناقص است.", ctx.canvas.width / 2, ctx.canvas.height / 2); continue; } let chartType = (labels.length > 2) ? 'radar' : 'bar'; console.log(`Creating ${chartType} chart for Axis ID: ${axisId}`); const datasets = [{ label: isParticipantView ? 'امتیاز شما' : `امتیاز ${participantName}`, data: participantScores, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgb(54, 162, 235)', borderWidth: 1.5, pointBackgroundColor: 'rgb(54, 162, 235)', order: 2 }, { label: 'میانگین کل (همه شرکت‌کنندگان)', data: overallAvgScores, borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.5)', pointBackgroundColor: 'rgb(255, 99, 132)', borderWidth: 2, type: (chartType === 'bar') ? 'line' : undefined, order: 1, tension: 0.1 }]; const config = { type: chartType, data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Vazirmatn' } } }, title: { display: false }, tooltip: { bodyFont: { family: 'Vazirmatn' }, titleFont: { family: 'Vazirmatn' } } }, scales: { r: (chartType === 'radar') ? { beginAtZero: true, max: 5, angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, grid: { color: 'rgba(0, 0, 0, 0.1)' }, pointLabels: { font: { size: 11, family: 'Vazirmatn' } }, ticks: { stepSize: 1, backdropColor: 'rgba(255, 255, 255, 0.75)', font: { family: 'Vazirmatn'} } } : undefined, y: (chartType === 'bar') ? { beginAtZero: true, max: 5, grid: { color: 'rgba(0, 0, 0, 0.1)' }, ticks: { stepSize: 1, font: { family: 'Vazirmatn' } } } : undefined, x: (chartType === 'bar') ? { grid: { display: false }, ticks: { font: { family: 'Vazirmatn' } } } : undefined } } }; try { const existingChart = Chart.getChart(canvasId); if (existingChart) { existingChart.destroy(); } new Chart(ctx, config); console.log(`Chart ${canvasId} created.`); } catch (e) { console.error(`Error creating chart for axis ${axisId}:`, e); const context = ctx.getContext('2d'); context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#dc3545"; context.fillText("خطا در رسم نمودار.", ctx.canvas.width / 2, ctx.canvas.height / 2); } } } });
+
+        if (typeof Chart === 'undefined') {
+            console.error("Chart.js library is not loaded.");
+            document.querySelectorAll('.chart-container, .bar-chart-container').forEach(container => {
+                container.innerHTML = '<p class="text-danger text-center">خطا: کتابخانه رسم نمودار بارگذاری نشده است.</p>';
+            });
+            return;
+        }
+
+        let chartData;
+        try {
+            chartData = {{ chart_data_json | safe }};
+            if (typeof chartData !== 'object' || chartData === null) throw new Error("Chart data is not valid.");
+            console.log("Participant Chart Data Parsed:", chartData);
+        } catch (e) {
+            console.error("Error parsing participant chart data JSON:", e);
+            const chartSection = document.querySelector('.row');
+            if(chartSection) chartSection.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center">خطا در بارگذاری داده‌های نمودار.</div></div>';
+            return;
+        }
+
+        const participantName = {{ summary_data.participant.name | tojson | safe }};
+
+        if (Object.keys(chartData).length === 0) {
+             console.warn("Participant chart data object is empty.");
+        }
+
+        for (const axisId in chartData) {
+            if (chartData.hasOwnProperty(axisId)) {
+                const axisData = chartData[axisId];
+                const canvasId = `chart-axis-${axisId}`;
+                const ctx = document.getElementById(canvasId);
+
+                if (!ctx) { console.error(`Canvas element with ID ${canvasId} not found.`); continue; }
+
+                const labels = axisData.labels;
+                const participantScores = axisData.participant_or_avg_scores;
+                const overallAvgScores = axisData.overall_indicator_averages;
+
+                if (!labels || !participantScores || !overallAvgScores ||
+                    labels.length === 0 || participantScores.length === 0 || overallAvgScores.length === 0 ||
+                    labels.length !== participantScores.length || labels.length !== overallAvgScores.length) {
+                     console.warn(`Inconsistent or missing data for axis ${axisData.name} (ID: ${axisId}). Skipping chart.`, axisData);
+                     const context = ctx.getContext('2d');
+                     context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#6c757d";
+                     context.fillText("داده‌های این نمودار ناقص است.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                     continue;
+                }
+
+                let chartType = (labels.length > 2) ? 'radar' : 'bar';
+                console.log(`Creating ${chartType} chart for Axis ID: ${axisId}`);
+
+                const datasets = [
+                    {
+                        label: isParticipantView ? 'امتیاز شما' : `امتیاز ${participantName}`,
+                        data: participantScores,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 1.5, pointBackgroundColor: 'rgb(54, 162, 235)', order: 2
+                    },
+                    {
+                        label: 'میانگین کل (همه شرکت‌کنندگان)', data: overallAvgScores,
+                        borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        pointBackgroundColor: 'rgb(255, 99, 132)', borderWidth: 2,
+                        type: (chartType === 'bar') ? 'line' : undefined, order: 1, tension: 0.1
+                    }
+                ];
+
+                // --- UPDATED: Chart.js options for responsiveness ---
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false, // Important for custom aspect ratio via CSS
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Vazirmatn', size: 11 } } },
+                        title: { display: false },
+                        tooltip: { bodyFont: { family: 'Vazirmatn' }, titleFont: { family: 'Vazirmatn' } }
+                    },
+                    scales: {} // Initialize scales object
+                };
+
+                if (chartType === 'radar') {
+                    chartOptions.scales.r = {
+                        beginAtZero: true,
+                        max: 5,
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: {
+                            font: {
+                                size: window.innerWidth < 768 ? 8 : 10, // Smaller font on mobile
+                                family: 'Vazirmatn'
+                            },
+                            // --- NEW: Callback to shorten long labels or wrap them ---
+                            callback: function(value) {
+                                if (value.length > 15 && window.innerWidth < 768) { // Example: shorten if longer than 15 chars on mobile
+                                    return value.substring(0, 12) + '...';
+                                }
+                                return value;
+                            }
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            backdropColor: 'rgba(255, 255, 255, 0.75)',
+                            font: { family: 'Vazirmatn', size: window.innerWidth < 768 ? 8 : 10 }
+                        }
+                    };
+                    // Adjust padding for radar charts on smaller screens
+                    chartOptions.layout = {
+                        padding: window.innerWidth < 576 ? 5 : (window.innerWidth < 768 ? 10 : 20)
+                    };
+                } else { // Bar chart
+                    chartOptions.scales.y = {
+                        beginAtZero: true, max: 5,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        ticks: { stepSize: 1, font: { family: 'Vazirmatn', size: 10 } }
+                    };
+                    chartOptions.scales.x = {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Vazirmatn', size: 10 } }
+                    };
+                }
+                // --- End UPDATED ---
+
+                try {
+                     const existingChart = Chart.getChart(canvasId);
+                     if (existingChart) { existingChart.destroy(); }
+                     new Chart(ctx, { type: chartType, data: { labels: labels, datasets: datasets }, options: chartOptions });
+                     console.log(`Chart ${canvasId} created successfully.`);
+                } catch (e) {
+                     console.error(`Error creating chart for axis ${axisId}:`, e);
+                     const context = ctx.getContext('2d');
+                     context.font = "14px Vazirmatn"; context.textAlign = "center"; context.fillStyle = "#dc3545";
+                     context.fillText("خطا در رسم نمودار.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                }
+            }
+        }
+    });
 </script>
 {% endblock %}
