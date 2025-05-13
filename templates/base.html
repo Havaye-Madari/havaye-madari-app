@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}سامانه هوای مادری{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    {# --- Block for page-specific styles --- #}
+    {% block styles %}{% endblock %}
+
+    <style>
+        /* General body styling */
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 70px;
+            direction: rtl;
+        }
+
+        /* Navbar styling */
+        .navbar {
+            background: linear-gradient(to right, #0056b3, #007bff);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff !important;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            padding: 0.5rem 1rem;
+            transition: color 0.2s ease;
+            font-weight: 500;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            color: #fff !important;
+        }
+        /* Add some margin for the logout button */
+        .navbar-nav .nav-item.logout-item {
+            margin-right: 15px; /* Adjust as needed */
+        }
+
+        /* Other styles remain the same */
+        .hero-section { text-align: center; padding: 4rem 2rem; margin-bottom: 2rem; background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%); border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .section-title { font-size: 1.75rem; font-weight: 600; margin-bottom: 1.5rem; color: #343a40; }
+        .card { border: none; border-radius: 15px; margin-bottom: 1.5rem; transition: transform 0.3s ease, box-shadow 0.3s ease; background-color: #fff; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+        .card-header { background-color: #f1f3f5; border-bottom: 1px solid #dee2e6; font-weight: 600; border-top-left-radius: 15px; border-top-right-radius: 15px; padding: 1rem 1.25rem; }
+        .card-body { padding: 1.5rem; }
+        .list-group-item { border-radius: 10px; margin-bottom: 10px; border-color: #e9ecef; padding: 1rem 1.25rem; }
+        .list-group-item strong { color: #0056b3; }
+        .footer { background-color: #e9ecef; padding: 1.5rem 0; text-align: center; color: #6c757d; margin-top: 3rem; font-size: 0.9rem; }
+        .btn { border-radius: 50px; padding: 0.6rem 1.2rem; font-weight: 500; transition: background-color 0.2s ease, box-shadow 0.2s ease; }
+        .btn-primary { background-color: #007bff; border-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+        .btn-danger { background-color: #dc3545; border-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; border-color: #bd2130; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.8rem; border-radius: 30px; }
+        .btn-action { margin-inline-start: 5px; }
+        .nav-tabs { border-bottom: 2px solid #dee2e6; }
+        .nav-tabs .nav-link { border: 1px solid transparent; border-top-left-radius: 10px; border-top-right-radius: 10px; color: #495057; font-weight: 600; padding: 0.75rem 1.25rem; transition: background-color 0.2s ease, color 0.2s ease; }
+        .nav-tabs .nav-link:hover { border-color: #e9ecef #e9ecef #dee2e6; background-color: #e9ecef; color: #0056b3; }
+        .nav-tabs .nav-link.active { color: #0056b3; background-color: #fff; border-color: #dee2e6 #dee2e6 #fff; border-bottom: 2px solid #fff; margin-bottom: -2px; }
+        .tab-content { margin-top: 1.5rem; padding: 1.5rem; background-color: #fff; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 15px 15px; }
+        .form-label { font-weight: 500; margin-bottom: 0.5rem; color: #495057; }
+        .form-control, .form-select { border-radius: 10px; border: 1px solid #ced4da; padding: 0.75rem 1rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .form-control:focus, .form-select:focus { border-color: #80bdff; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); outline: none; }
+        textarea.form-control { min-height: 100px; }
+        .form-group, .mb-3 { margin-bottom: 1.25rem !important; }
+        .alert { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-weight: 500; }
+        .alert-success { background-color: #d1e7dd; border-color: #badbcc; color: #0f5132; }
+        .alert-danger { background-color: #f8d7da; border-color: #f5c2c7; color: #842029; }
+        .alert-warning { background-color: #fff3cd; border-color: #ffecb5; color: #664d03; }
+        .alert-info { background-color: #cff4fc; border-color: #b6effb; color: #055160; }
+        .hierarchy-list { padding-right: 0; list-style: none; }
+        .axis-item, .indicator-item, .measure-item { background-color: #fff; border: 1px solid #e9ecef; border-radius: 10px; margin-bottom: 15px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .axis-item { background-color: #f8f9fa; border-left: 4px solid #007bff; }
+        .indicator-item { margin-right: 30px; border-left: 4px solid #17a2b8; }
+        .measure-item { margin-right: 60px; border-left: 4px solid #28a745; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .item-header h5, .item-header h6 { margin-bottom: 0; font-weight: 600; }
+        .item-header .badge { font-size: 0.85em; }
+        .item-description { color: #6c757d; font-size: 0.9rem; margin-top: 5px; }
+        .action-buttons form { display: inline-block; margin-left: 5px; }
+        .action-buttons .btn-edit { margin-left: 5px; }
+
+    </style>
+</head>
+<body>
+
+    {# Navbar is always present, but content changes based on login status and view type #}
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            {# Brand is always visible, link depends on view #}
+            <a class="navbar-brand" href="{{ url_for('main.index') if not request.endpoint.startswith('participant_view.') and not is_participant_view else '#' }}">
+                 <i class="fas fa-heartbeat me-2"></i> سامانه هوای مادری
+            </a>
+
+            {# Show toggler and menu ONLY if NOT participant view AND user is logged in #}
+            {% if not request.endpoint.startswith('participant_view.') and not is_participant_view and current_user.is_authenticated %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center"> {# Use align-items-center for vertical alignment #}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.manage_hierarchy' %}active{% endif %}"
+                           href="{{ url_for('admin.manage_hierarchy') }}">
+                           <i class="fas fa-sitemap me-1"></i> مدیریت ساختار
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'participants.list_participants' %}active{% endif %}"
+                           href="{{ url_for('participants.list_participants') }}">
+                           <i class="fas fa-users me-1"></i> مدیریت شرکت کنندگان
+                        </a>
+                    </li>
+                     {# --- REMOVED: Overall Results Link ---
+                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'results.summary' %}active{% endif %}"
+                           href="{{ url_for('results.summary') }}">
+                           <i class="fas fa-chart-pie me-1"></i> مشاهده نتایج کل
+                        </a>
+                    </li>
+                     --- END REMOVED --- #}
+                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin.manage_help' %}active{% endif %}"
+                           href="{{ url_for('admin.manage_help') }}">
+                           <i class="fas fa-info-circle me-1"></i> مدیریت راهنما
+                        </a>
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('participant_view.my_results_login') }}" target="_blank">
+                           <i class="fas fa-user-check me-1"></i> ورود شرکت‌کننده
+                        </a>
+                    </li>
+                    {# --- Logout Button --- #}
+                    <li class="nav-item logout-item">
+                         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+                             <i class="fas fa-sign-out-alt me-1"></i> خروج ({{ current_user.username }})
+                         </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %} {# End of conditional menu for logged-in admin #}
+        </div>
+    </nav>
+    {# --- End Navbar Logic --- #}
+
+    {# Container for main content #}
+    <div class="container mt-4">
+
+        {# Display flash messages conditionally #}
+        {% if not request.endpoint.startswith(('auth.', 'participant_view.')) and not is_participant_view %}
+             {% include '_flash_messages.html' ignore missing %}
+        {% endif %}
+
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {# Conditionally display footer #}
+    {% if not request.endpoint.startswith(('auth.', 'participant_view.')) and not is_participant_view %}
+    <footer class="footer mt-5">
+        <div class="container">
+            <p>&copy; {% block year %}2025{% endblock %} سامانه هوای مادری - تمامی حقوق محفوظ است.</p>
+        </div>
+    </footer>
+    {% endif %}
+
+    {# Include JS #}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {# Conditionally include Chart.js #}
+     {% if not request.endpoint.startswith(('auth.', 'participant_view.')) and not is_participant_view %}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+     {% endif %}
+
+    {% block scripts %}
+    {# Page specific scripts will go here #}
+    {% endblock %}
+
+</body>
+</html>

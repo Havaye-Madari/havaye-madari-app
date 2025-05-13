@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}آپلود امتیازات شرکت‌کنندگان{% endblock %}
+
+{% block content %}
+<h2 class="section-title mb-4">آپلود امتیازات از فایل Excel/CSV</h2>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% include '_flash_messages.html' ignore missing %}
+--- END REMOVED --- #}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p>برای آپلود دسته‌ای امتیازات، یک فایل اکسل (`.xlsx`) یا CSV (`.csv`) مطابق ساختار زیر آماده کنید:</p>
+        <ul>
+            <li>ستون اول: <strong>شماره تلفن</strong> (اجباری)</li>
+            <li>ستون دوم: <strong>نام</strong> (اجباری - نام کامل شرکت‌کننده)</li>
+            <li>ستون‌های بعدی: <strong>نام دقیق و کامل هر سنجه یا شاخص فعال</strong> که می‌خواهید برای آن امتیاز وارد کنید.
+                <ul>
+                    <li>فرمت نام کامل: <code>نام محور / نام شاخص / نام سنجه</code></li>
+                    <li>یا برای امتیاز مستقیم به شاخص: <code>نام محور / نام شاخص (مستقیم)</code></li>
+                </ul>
+            </li>
+        </ul>
+        <p>مقادیر امتیاز باید عددی بین <strong>0</strong> و <strong>5</strong> باشند.</p>
+        <p>
+             <a href="{{ url_for('participants.download_score_template') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> دانلود فایل نمونه اکسل (با سرستون‌های فعلی)
+            </a>
+             <small class="ms-2 text-muted">(ساختار فایل نمونه بر اساس محور/شاخص/سنجه‌های فعال فعلی تولید می‌شود)</small>
+        </p>
+        <hr>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('participants.upload_scores') }}">
+            {{ form.hidden_tag() }} {# CSRF token #}
+            <div class="mb-3">
+                {{ form.excel_file.label(class="form-label") }}
+                {{ form.excel_file(class="form-control" + (" is-invalid" if form.excel_file.errors else "")) }}
+                {% if form.excel_file.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.excel_file.errors[0] }}
+                    </div>
+                {% endif %}
+            </div>
+            {{ form.submit(class="btn btn-primary") }}
+             <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary ms-2">بازگشت به لیست</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
