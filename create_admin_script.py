@@ -5,8 +5,8 @@ from werkzeug.security import generate_password_hash
 
 def setup_admin():
     # --- نام کاربری و رمز عبور ادمین را اینجا مشخص کنید ---
-    admin_username = "نام_کاربری_ادمین_جدید_شما"
-    admin_password = "رمز_عبور_بسیار_قوی_شما"
+    admin_username = "admin"
+    admin_password = "madari@1404"
     # ----------------------------------------------------
 
     with app.app_context(): # نیاز به app context برای کار با دیتابیس
