@@ -5,3 +5,4 @@ Flask-WTF
 pandas
 openpyxl
 werkzeug # Needed for password hashing (usually installed with Flask)
+gunicorn
