@@ -182,7 +182,11 @@
     {# Conditionally include Chart.js #}
      {% if not request.endpoint.startswith(('auth.', 'participant_view.')) and not is_participant_view %}
         <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<<<<<<< HEAD
      {% endif %} {# <--- CORRECTED: Added endif here #}
+=======
+     {% endif %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
 
     {% block scripts %}
     {# Page specific scripts will go here #}

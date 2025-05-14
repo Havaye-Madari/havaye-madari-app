@@ -37,7 +37,11 @@
         {# Title and Help Button #}
         <div class="position-relative mb-4">
             <h2 class="section-title mb-0">
+<<<<<<< HEAD
                 نتایج ارزیابی برای:
+=======
+                نتایج ارزیابی برای: 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                 {% if summary_data.participant %}
                     {{ summary_data.participant.name }} ({{ summary_data.participant.phone }})
                 {% else %}
@@ -129,9 +133,15 @@
                 {# Charts Section #}
                 <h3 class="section-title mt-5">نمودارهای نتایج</h3>
                 <div class="row">
+<<<<<<< HEAD
                     {% if summary_data.axes %}
                         {% for axis in summary_data.axes %}
                              {% if axis.indicators %} {# Only create canvas if axis has indicators #}
+=======
+                    {% if summary_data.axes and chart_data_json and chart_data_json != '{}' %} {# Check if chart_data is not empty #}
+                        {% for axis in summary_data.axes %}
+                             {% if axis.indicators and axis.id in (chart_data_json | fromjson) %} {# Check if this axis has chart data #}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                                 <div class="col-lg-6 mb-4">
                                     <div class="card shadow-sm h-100">
                                         <div class="card-header axis-header">
@@ -144,6 +154,7 @@
                                         </div>
                                     </div>
                                 </div>
+<<<<<<< HEAD
                             {% endif %} {# Closing if axis.indicators #}
                         {% endfor %}
                         {% if not summary_data.axes | selectattr('indicators') | list %}
@@ -155,6 +166,21 @@
                 </div>
                 {# End Charts Section #}
             {% endif %} {# Closing if summary_data.all_scores_zero_for_individual (else part) #}
+=======
+                            {% endif %}
+                        {% endfor %}
+                         {% if not summary_data.axes | selectattr('indicators') | list %} {# No active indicators in any axis #}
+                         <div class="col-12"><div class="alert alert-warning text-center">هیچ شاخص فعالی برای رسم نمودار در محورهای موجود یافت نشد.</div></div>
+                        {% elif not (chart_data_json | fromjson) %} {# chart_data_json is empty {} #}
+                         <div class="col-12"><div class="alert alert-info text-center">داده‌ای برای رسم نمودار پس از فیلترها موجود نیست.</div></div>
+                        {% endif %}
+                    {% else %}
+                        <div class="col-12"><div class="alert alert-warning text-center">داده‌ای برای رسم نمودار وجود ندارد یا محور/شاخصی تعریف نشده است.</div></div>
+                    {% endif %}
+                </div>
+                {# End Charts Section #}
+            {% endif %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
             {# --- End Conditional display --- #}
 
             {# Attachment Section (Located after charts or "no participation" message) #}
@@ -170,12 +196,20 @@
              <div class="attachment-section text-center">
                  <p class="text-muted fst-italic">گواهی دوره‌ای برای شما بارگذاری نشده است.</p>
              </div>
+<<<<<<< HEAD
             {% endif %} {# Closing if summary_data.participant.attachment_filename #}
+=======
+            {% endif %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
             {# End Attachment Section #}
 
         {% else %} {# Participant data not available #}
             <div class="alert alert-danger text-center mt-4">اطلاعات شرکت‌کننده یافت نشد.</div>
+<<<<<<< HEAD
         {% endif %} {# Closing if summary_data.participant #}
+=======
+        {% endif %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
 
 
         {# Conditionally show back button #}
@@ -185,7 +219,11 @@
                 <i class="fas fa-arrow-left me-1"></i> بازگشت به لیست شرکت‌کنندگان
             </a>
         </div>
+<<<<<<< HEAD
         {% endif %} {# Closing if not is_participant_view #}
+=======
+        {% endif %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
 
     </div> {# End card-body (if participant view) or main div #}
 </div> {# End card (if participant view) #}
@@ -209,6 +247,7 @@
     </div>
   </div>
 </div>
+<<<<<<< HEAD
 {% endif %} {# Closing if help_text #}
 {# End Help Modal #}
 
@@ -244,11 +283,50 @@
                     }
                 }
                 return; // Stop further execution if Chart.js is missing
+=======
+{% endif %}
+{# End Help Modal #}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{# Ensure Chart.js is loaded if needed (it's included in base.html for admin, conditionally for participant) #}
+{% if is_participant_view and summary_data.participant and not summary_data.all_scores_zero_for_individual %} {# Load Chart.js only if participant view, participant exists, AND scores are not all zero #}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- UPDATED: Correctly pass boolean for summaryDataAvailable ---
+        const summaryDataAvailable = {{ True if summary_data and summary_data.participant else False | tojson }};
+        // --- End UPDATED ---
+        const allScoresZero = summaryDataAvailable ? {{ summary_data.all_scores_zero_for_individual | tojson }} : true; 
+        
+        if (summaryDataAvailable && !allScoresZero) {
+            console.log("DOM loaded. Attempting to render charts for participant (scores are not all zero).");
+            const isParticipantView = {{ is_participant_view | tojson }};
+            
+            if (typeof Chart === 'undefined') {
+                console.error("Chart.js library is not loaded. Charts cannot be rendered.");
+                const chartRow = document.querySelector('.row'); 
+                if(chartRow) {
+                    const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                    if (chartSectionTitle) {
+                        let nextElem = chartSectionTitle.nextElementSibling;
+                        if (nextElem && nextElem.classList.contains('row')) {
+                             nextElem.innerHTML = '<div class="col-12"><div class="alert alert-warning text-center">کتابخانه نمودار بارگذاری نشده است.</div></div>';
+                        }
+                    }
+                }
+                return; 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
             }
 
             let chartData;
             try {
                 const chartDataJsonString = {{ chart_data_json | tojson | safe }};
+<<<<<<< HEAD
                 if (chartDataJsonString && chartDataJsonString.trim() !== '' && chartDataJsonString !== '{}') {
                     chartData = JSON.parse(chartDataJsonString);
                 } else {
@@ -286,6 +364,43 @@
                         }
                     }
                 return; 
+=======
+                if (chartDataJsonString && chartDataJsonString !== '{}') {
+                    chartData = JSON.parse(chartDataJsonString);
+                } else {
+                    chartData = {}; 
+                }
+                
+                if (typeof chartData !== 'object' || chartData === null) throw new Error("Chart data is not a valid object.");
+                console.log("Participant Chart Data Parsed:", chartData);
+            } catch (e) {
+                console.error("Error parsing chart data JSON:", e, {{ chart_data_json | tojson | safe }});
+                const chartRow = document.querySelector('.row'); 
+                if(chartRow) {
+                    const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                    if (chartSectionTitle) {
+                        let nextElem = chartSectionTitle.nextElementSibling;
+                        if (nextElem && nextElem.classList.contains('row')) { 
+                             nextElem.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center">خطا در بارگذاری داده‌های نمودار.</div></div>';
+                        }
+                    }
+                }
+                return; 
+            }
+            
+            const participantName = {{ summary_data.participant.name | tojson | safe if summary_data.participant else "'شرکت‌کننده'" | tojson | safe }};
+
+            if (Object.keys(chartData).length === 0) {
+                console.warn("Participant chart data object is empty. No charts will be rendered.");
+                 const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                 if (chartSectionTitle) {
+                        let nextElem = chartSectionTitle.nextElementSibling;
+                        if (nextElem && nextElem.classList.contains('row')) {
+                             nextElem.innerHTML = '<div class="col-12"><div class="alert alert-info text-center">داده‌ای برای رسم نمودار وجود ندارد.</div></div>';
+                        }
+                    }
+                return;
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
             }
 
             for (const axisId in chartData) {
@@ -293,6 +408,7 @@
                     const axisData = chartData[axisId];
                     const canvasId = `chart-axis-${axisId}`;
                     const ctx = document.getElementById(canvasId);
+<<<<<<< HEAD
 
                     if (!ctx) {
                         console.error(`Canvas element with ID ${canvasId} not found for axis ${axisData.name}.`);
@@ -300,6 +416,11 @@
                         if (chartCardContainer) {
                             chartCardContainer.innerHTML = '<div class="alert alert-warning text-center p-3">خطا: عنصر بوم نقاشی برای این نمودار یافت نشد.</div>';
                         }
+=======
+                    
+                    if (!ctx) {
+                        console.error(`Canvas element with ID ${canvasId} not found for axis ${axisData.name}.`);
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                         continue;
                     }
                     console.log(`Processing Axis ID: ${axisId}, Name: ${axisData.name} for participant`);
@@ -308,6 +429,7 @@
                     const participantScores = axisData.participant_or_avg_scores;
                     const overallAvgScores = axisData.overall_indicator_averages;
 
+<<<<<<< HEAD
                     if (!labels || labels.length === 0 ||
                         !participantScores || participantScores.length === 0 ||
                         !overallAvgScores || overallAvgScores.length === 0 ||
@@ -317,6 +439,16 @@
                         console.warn(`Inconsistent or missing data for axis ${axisData.name}. Skipping chart.`, axisData);
                         const context = ctx.getContext('2d');
                         context.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+=======
+                    if (!labels || labels.length === 0 || 
+                        !participantScores || participantScores.length === 0 || 
+                        !overallAvgScores || overallAvgScores.length === 0 || 
+                        labels.length !== participantScores.length || 
+                        labels.length !== overallAvgScores.length) {
+                        
+                        console.warn(`Inconsistent or missing data for axis ${axisData.name}. Skipping chart.`, axisData);
+                        const context = ctx.getContext('2d');
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                         context.font = "14px Vazirmatn";
                         context.textAlign = "center";
                         context.fillStyle = "#6c757d";
@@ -331,7 +463,11 @@
                         {
                             label: isParticipantView ? 'امتیاز شما' : `امتیاز ${participantName}`,
                             data: participantScores,
+<<<<<<< HEAD
                             backgroundColor: 'rgba(54, 162, 235, 0.5)',
+=======
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)', 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                             borderColor: 'rgb(54, 162, 235)',
                             borderWidth: 1.5,
                             pointBackgroundColor: 'rgb(54, 162, 235)',
@@ -340,13 +476,22 @@
                         {
                             label: 'میانگین کل (همه شرکت‌کنندگان)',
                             data: overallAvgScores,
+<<<<<<< HEAD
                             borderColor: 'rgb(255, 99, 132)',
                             backgroundColor: 'rgba(255, 99, 132, 0.5)', 
+=======
+                            borderColor: 'rgb(255, 99, 132)', 
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                             pointBackgroundColor: 'rgb(255, 99, 132)',
                             borderWidth: (chartType === 'bar') ? 2 : 1.5, 
                             type: (chartType === 'bar') ? 'line' : undefined, 
                             order: 1, 
+<<<<<<< HEAD
                             tension: 0.1 
+=======
+                            tension: 0.1
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                         }
                     ];
 
@@ -364,7 +509,11 @@
                                     position: 'bottom',
                                     labels: { font: { family: 'Vazirmatn' } }
                                 },
+<<<<<<< HEAD
                                 title: { display: false },
+=======
+                                title: { display: false }, 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                                 tooltip: {
                                     bodyFont: { family: 'Vazirmatn' },
                                     titleFont: { family: 'Vazirmatn' }
@@ -379,7 +528,11 @@
                                     pointLabels: { font: { size: 11, family: 'Vazirmatn' } },
                                     ticks: {
                                         stepSize: 1,
+<<<<<<< HEAD
                                         backdropColor: 'rgba(255, 255, 255, 0.75)',
+=======
+                                        backdropColor: 'rgba(255, 255, 255, 0.75)', 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                                         font: { family: 'Vazirmatn'}
                                     }
                                 } : undefined,
@@ -390,7 +543,11 @@
                                     ticks: { stepSize: 1, font: { family: 'Vazirmatn' } }
                                 } : undefined,
                                 x: (chartType === 'bar') ? {
+<<<<<<< HEAD
                                     grid: { display: false },
+=======
+                                    grid: { display: false }, 
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
                                     ticks: { font: { family: 'Vazirmatn' } }
                                 } : undefined
                             }
@@ -407,6 +564,7 @@
                     } catch (e) {
                         console.error(`Error creating chart for axis ${axisId}:`, e);
                         const context = ctx.getContext('2d');
+<<<<<<< HEAD
                         context.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                         context.font = "14px Vazirmatn";
                         context.textAlign = "center";
@@ -416,8 +574,22 @@
                 } // Closing if (chartData.hasOwnProperty(axisId))
             } // Closing for (const axisId in chartData)
         } else { // Closing if (summaryDataAvailable && !allScoresZero)
+=======
+                        context.font = "14px Vazirmatn";
+                        context.textAlign = "center";
+                        context.fillStyle = "#dc3545"; 
+                        context.fillText("خطا در رسم نمودار.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    }
+                }
+            }
+        } else {
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179
             console.log("Participant data not fully available or all scores are zero. Charts will not be rendered via JS.");
         }
     });
 </script>
+<<<<<<< HEAD
 {% endblock %} {# Closing block scripts #}
+=======
+{% endblock %}
+>>>>>>> aad64724f914ff228bb877ccb0be62c635460179

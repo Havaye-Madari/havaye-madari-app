@@ -1,0 +1,8 @@
+{
+    "disks": [
+      {
+        "name": "havayemadari",
+        "mountTo": "/uploads"
+      }
+    ]
+}
