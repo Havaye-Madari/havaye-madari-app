@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت متن راهنمای نتایج{% endblock %}
+
+{% block content %}
+<h2 class="section-title mb-4">مدیریت متن راهنمای صفحه نتایج</h2>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% include '_flash_messages.html' ignore missing %}
+--- END REMOVED --- #}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">ویرایش متن راهنما</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">
+            متنی که در این بخش وارد می‌کنید، در یک پنجره پاپ‌آپ (Modal) در صفحات مشاهده نتایج (هم برای مدیر و هم برای شرکت‌کننده) نمایش داده خواهد شد.
+            می‌توانید از تگ‌های HTML ساده مانند `<br>` برای ایجاد خط جدید، `<b>` برای توپر کردن، `<ul><li>` برای لیست و ... استفاده کنید.
+        </p>
+        <hr>
+        <form method="POST" action="{{ url_for('admin.manage_help') }}">
+            {{ form.hidden_tag() }} {# CSRF token #}
+
+            <div class="mb-3">
+                {{ form.help_text.label(class="form-label") }}
+                {{ form.help_text(class="form-control" + (" is-invalid" if form.help_text.errors else ""), render_kw={'rows': 15, 'style': 'font-family: Vazirmatn, sans-serif;'}) }}
+                {% if form.help_text.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.help_text.errors[0] }}
+                    </div>
+                {% endif %}
+            </div>
+
+            {{ form.submit(class="btn btn-primary") }}
+             <a href="{{ url_for('main.index') }}" class="btn btn-secondary ms-2">بازگشت به صفحه اصلی</a>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

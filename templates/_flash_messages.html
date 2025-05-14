@@ -1,0 +1,13 @@
+{# templates/_flash_messages.html #}
+{# This partial template displays flashed messages with categories #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        {# Use pre-wrap to preserve newlines, safe filter for potential HTML #}
+        <div class="alert alert-{{ category or 'info' }} alert-dismissible fade show" role="alert" style="white-space: pre-wrap;">
+            {{ message | safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}

@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}مدیریت ساختار ارزیابی{% endblock %}
+
+{% block content %}
+<h2 class="section-title mb-4">مدیریت ساختار ارزیابی (محورها، شاخص‌ها، سنجه‌ها)</h2>
+
+{# --- REMOVED: Duplicate flash message include ---
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category or 'info' }} alert-dismissible fade show" role="alert" style="white-space: pre-wrap;">
+            {{ message | safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+--- END REMOVED --- #}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+             <i class="fas fa-file-excel me-2 text-success"></i> آپلود ساختار ارزیابی از فایل اکسل
+        </h5>
+    </div>
+    <div class="card-body">
+        <p>می‌توانید ساختار کامل (محورها، شاخص‌ها و سنجه‌ها) را به صورت یکجا از طریق یک فایل اکسل استاندارد آپلود کنید.</p>
+        <p>
+            <a href="{{ url_for('admin.download_template') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> دانلود فایل نمونه اکسل
+            </a>
+             <small class="ms-2 text-muted">(فرمت الزامی: .xlsx)</small>
+        </p>
+        <hr>
+        <form id="upload-hierarchy-form" method="POST" action="{{ url_for('admin.upload_hierarchy') }}" enctype="multipart/form-data">
+            {{ upload_form.hidden_tag() }} <div class="mb-3">
+                {{ upload_form.excel_file.label(class="form-label") }}
+                {{ upload_form.excel_file(class="form-control" + (" is-invalid" if upload_form.excel_file.errors else "")) }}
+                {% if upload_form.excel_file.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ upload_form.excel_file.errors[0] }}
+                    </div>
+                {% endif %}
+            </div>
+            {{ upload_form.submit_upload(class="btn btn-success") }}
+        </form>
+    </div>
+</div>
+
+
+<h3 class="section-title mt-5">افزودن / ویرایش دستی</h3>
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 id="axis-form-title">محور</h5></div>
+            <div class="card-body d-flex flex-column">
+                <form id="axis-form" method="POST" action="{{ url_for('admin.manage_hierarchy') }}" class="flex-grow-1">
+                    {{ axis_form.hidden_tag() }}
+                    {{ axis_form.id(id="axis-form-id") }}
+                    <div class="mb-3">
+                        {{ axis_form.name.label(class="form-label") }}
+                        {{ axis_form.name(class="form-control" + (" is-invalid" if axis_form.name.errors else ""), placeholder="نام محور...", id="axis-name") }}
+                         {% if axis_form.name.errors %}<div class="invalid-feedback d-block">{{ axis_form.name.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ axis_form.description.label(class="form-label") }}
+                        {{ axis_form.description(class="form-control", rows=3, placeholder="توضیحات...", id="axis-description") }}
+                    </div>
+                    <div class="mt-auto">
+                        {{ axis_form.submit_axis(class="btn btn-primary w-100") }}
+                        <button type="button" id="cancel-edit-axis" class="btn btn-secondary w-100 mt-2 d-none" onclick="resetAxisForm()">لغو ویرایش</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 id="indicator-form-title">شاخص</h5></div>
+            <div class="card-body d-flex flex-column">
+                <form id="indicator-form" method="POST" action="{{ url_for('admin.manage_hierarchy') }}" class="flex-grow-1">
+                    {{ indicator_form.hidden_tag() }}
+                    {{ indicator_form.id(id="indicator-id") }}
+                    <div class="mb-3">
+                        {{ indicator_form.axis_id.label(class="form-label") }}
+                        {{ indicator_form.axis_id(class="form-select" + (" is-invalid" if indicator_form.axis_id.errors else ""), id="indicator-axis_id") }}
+                         {% if indicator_form.axis_id.errors %}<div class="invalid-feedback d-block">{{ indicator_form.axis_id.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ indicator_form.name.label(class="form-label") }}
+                        {{ indicator_form.name(class="form-control" + (" is-invalid" if indicator_form.name.errors else ""), placeholder="نام شاخص...", id="indicator-name") }}
+                         {% if indicator_form.name.errors %}<div class="invalid-feedback d-block">{{ indicator_form.name.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ indicator_form.weight.label(class="form-label") }}
+                        {{ indicator_form.weight(class="form-control" + (" is-invalid" if indicator_form.weight.errors else ""), type="number", step="0.01", min="0", max="1", placeholder="مثال: 0.4", id="indicator-weight") }}
+                         {% if indicator_form.weight.errors %}<div class="invalid-feedback d-block">{{ indicator_form.weight.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ indicator_form.description.label(class="form-label") }}
+                        {{ indicator_form.description(class="form-control", rows=2, placeholder="توضیحات...", id="indicator-description") }}
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ indicator_form.is_active(class="form-check-input", id="indicator-is_active") }}
+                        {{ indicator_form.is_active.label(class="form-check-label") }}
+                    </div>
+                     <div class="mt-auto">
+                        {{ indicator_form.submit_indicator(class="btn btn-info w-100 text-white") }}
+                        <button type="button" id="cancel-edit-indicator" class="btn btn-secondary w-100 mt-2 d-none" onclick="resetIndicatorForm()">لغو ویرایش</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header"><h5 id="measure-form-title">سنجه</h5></div>
+            <div class="card-body d-flex flex-column">
+                <form id="measure-form" method="POST" action="{{ url_for('admin.manage_hierarchy') }}" class="flex-grow-1">
+                    {{ measure_form.hidden_tag() }}
+                     {{ measure_form.id(id="measure-id") }}
+                    <div class="mb-3">
+                        {{ measure_form.indicator_id.label(class="form-label") }}
+                        {{ measure_form.indicator_id(class="form-select" + (" is-invalid" if measure_form.indicator_id.errors else ""), id="measure-indicator_id") }}
+                         {% if measure_form.indicator_id.errors %}<div class="invalid-feedback d-block">{{ measure_form.indicator_id.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ measure_form.name.label(class="form-label") }}
+                        {{ measure_form.name(class="form-control" + (" is-invalid" if measure_form.name.errors else ""), placeholder="نام سنجه...", id="measure-name") }}
+                         {% if measure_form.name.errors %}<div class="invalid-feedback d-block">{{ measure_form.name.errors[0] }}</div>{% endif %}
+                    </div>
+                     <div class="mb-3">
+                        {{ measure_form.weight.label(class="form-label") }}
+                        {{ measure_form.weight(class="form-control" + (" is-invalid" if measure_form.weight.errors else ""), type="number", step="0.01", min="0", max="1", placeholder="مثال: 0.6", id="measure-weight") }}
+                         {% if measure_form.weight.errors %}<div class="invalid-feedback d-block">{{ measure_form.weight.errors[0] }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ measure_form.description.label(class="form-label") }}
+                        {{ measure_form.description(class="form-control", rows=2, placeholder="توضیحات...", id="measure-description") }}
+                    </div>
+                     <div class="form-check mb-3">
+                        {{ measure_form.is_active(class="form-check-input", id="measure-is_active") }}
+                        {{ measure_form.is_active.label(class="form-check-label") }}
+                    </div>
+                     <div class="mt-auto">
+                        {{ measure_form.submit_measure(class="btn btn-success w-100") }}
+                        <button type="button" id="cancel-edit-measure" class="btn btn-secondary w-100 mt-2 d-none" onclick="resetMeasureForm()">لغو ویرایش</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-4">
+
+<h3 class="section-title">ساختار فعلی ارزیابی</h3>
+<div class="hierarchy-display">
+    {% if axes_data %}
+        <ul class="list-unstyled">
+            {% for axis in axes_data %}
+            <li class="axis-item mb-4">
+                <div class="item-header">
+                    <h5><i class="fas fa-folder-open text-primary me-2"></i> محور: {{ axis.name }}</h5>
+                    <div class="action-buttons">
+                         <button class="btn btn-sm btn-outline-secondary btn-edit me-1" onclick="editAxis({{ axis.id }})">
+                            <i class="fas fa-edit"></i> ویرایش
+                        </button>
+                        <form action="{{ url_for('admin.delete_axis', axis_id=axis.id) }}" method="POST" class="d-inline" onsubmit="return confirm('آیا از حذف این محور و تمام شاخص‌ها و سنجه‌های زیرمجموعه آن مطمئن هستید؟');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash-alt"></i> حذف
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                 {% if axis.description %}<p class="item-description text-muted">{{ axis.description }}</p>{% endif %}
+
+                {% if axis.indicators %}
+                    <ul class="list-unstyled mt-3">
+                        {% for indicator in axis.indicators|sort(attribute='name') %}
+                        <li class="indicator-item mb-3 {% if not indicator.is_active %}inactive-item{% endif %}">
+                            <div class="item-header">
+                                <h6>
+                                    <i class="fas fa-chart-bar me-2 {% if indicator.is_active %}text-info{% else %}text-muted{% endif %}"></i>
+                                    شاخص: {{ indicator.name }}
+                                    <span class="badge bg-secondary">وزن: {{ indicator.weight }}</span>
+                                    {% if indicator.is_active %}
+                                        <span class="badge bg-success ms-1">فعال</span>
+                                        {% if indicator.allow_direct_score %}
+                                            <span class="badge bg-warning text-dark ms-1">امتیاز مستقیم</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-danger ms-1">غیرفعال</span>
+                                    {% endif %}
+                                </h6>
+                                <div class="action-buttons">
+                                     <form action="{{ url_for('admin.toggle_indicator_active', indicator_id=indicator.id) }}" method="POST" class="d-inline">
+                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                         <button type="submit" class="btn btn-sm {% if indicator.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="{{ 'غیرفعال کردن' if indicator.is_active else 'فعال کردن' }}">
+                                             <i class="fas {% if indicator.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                         </button>
+                                     </form>
+                                     <button class="btn btn-sm btn-outline-secondary btn-edit ms-1 me-1" onclick="editIndicator({{ indicator.id }})">
+                                        <i class="fas fa-edit"></i> ویرایش
+                                    </button>
+                                    <form action="{{ url_for('admin.delete_indicator', indicator_id=indicator.id) }}" method="POST" class="d-inline" onsubmit="return confirm('آیا از حذف این شاخص و تمام سنجه‌های زیرمجموعه آن مطمئن هستید؟');">
+                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash-alt"></i> حذف
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                             {% if indicator.description %}<p class="item-description text-muted">{{ indicator.description }}</p>{% endif %}
+
+                            {% if indicator.measures %}
+                                <ul class="list-unstyled mt-2">
+                                    {% for measure in indicator.measures|sort(attribute='name') %}
+                                    <li class="measure-item mb-2 {% if not measure.is_active %}inactive-item{% endif %}">
+                                        <div class="item-header">
+                                            <span>
+                                                <i class="fas fa-tasks me-2 {% if measure.is_active %}text-success{% else %}text-muted{% endif %}"></i>
+                                                سنجه: {{ measure.name }}
+                                                <span class="badge bg-light text-dark border">وزن: {{ measure.weight }}</span>
+                                                {% if measure.is_active %}
+                                                    <span class="badge bg-success ms-1">فعال</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger ms-1">غیرفعال</span>
+                                                {% endif %}
+                                            </span>
+                                            <div class="action-buttons">
+                                                <form action="{{ url_for('admin.toggle_measure_active', measure_id=measure.id) }}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-sm {% if measure.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="{{ 'غیرفعال کردن' if measure.is_active else 'فعال کردن' }}">
+                                                        <i class="fas {% if measure.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                                    </button>
+                                                </form>
+                                                <button class="btn btn-sm btn-outline-secondary btn-edit ms-1 me-1" onclick="editMeasure({{ measure.id }})">
+                                                    <i class="fas fa-edit"></i> ویرایش
+                                                </button>
+                                                <form action="{{ url_for('admin.delete_measure', measure_id=measure.id) }}" method="POST" class="d-inline" onsubmit="return confirm('آیا از حذف این سنجه مطمئن هستید؟ (امتیازات ثبت شده برای آن نیز حذف خواهند شد)');">
+                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash-alt"></i> حذف
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                         {% if measure.description %}<p class="item-description text-muted">{{ measure.description }}</p>{% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted small fst-italic mt-2">هنوز سنجه‌ای برای این شاخص تعریف نشده است.</p>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted small fst-italic mt-3">هنوز شاخصی برای این محور تعریف نشده است.</p>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-warning" role="alert">
+            هنوز هیچ محوری در سامانه تعریف نشده است. از فرم‌های بالا برای افزودن دستی یا از بخش آپلود فایل برای افزودن دسته‌ای استفاده کنید.
+        </div>
+    {% endif %}
+</div>
+
+{# CSS for inactive items #}
+<style>
+    .inactive-item > .item-header h6,
+    .inactive-item > .item-header span:not(.badge),
+    .inactive-item > .item-description {
+        color: #adb5bd !important;
+        text-decoration: line-through;
+    }
+     .inactive-item {
+         opacity: 0.7;
+         background-color: #f8f9fa;
+     }
+     .inactive-item .badge {
+         opacity: 1;
+         text-decoration: none !important;
+     }
+     .inactive-item .item-header i.text-muted {
+         color: #adb5bd !important;
+     }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Ensure unique IDs for form elements used by JS
+    function ensureElementId(selector, desiredId) {
+        const element = document.querySelector(selector);
+        if (element && !element.id) {
+            element.id = desiredId;
+        } else if (element && element.id !== desiredId) {
+             console.warn(`Element found by selector '${selector}' already has ID '${element.id}', expected '${desiredId}'.`);
+        }
+        return element;
+    }
+
+    // --- Axis Edit Functionality ---
+    function editAxis(axisId) {
+        fetch(`/admin/axis/${axisId}/data`)
+            .then(response => response.json())
+            .then(data => {
+                ensureElementId('#axis-form input[name="axis-id"]', 'axis-form-id').value = data.id;
+                ensureElementId('#axis-form input[name="axis-name"]', 'axis-name').value = data.name;
+                ensureElementId('#axis-form textarea[name="axis-description"]', 'axis-description').value = data.description;
+                document.getElementById('axis-form-title').innerText = 'ویرایش محور: ' + data.name;
+                document.getElementById('cancel-edit-axis').classList.remove('d-none');
+                document.getElementById('axis-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            })
+            .catch(error => console.error('Error fetching axis data:', error));
+    }
+
+    function resetAxisForm() {
+        document.getElementById('axis-form').reset();
+        ensureElementId('#axis-form input[name="axis-id"]', 'axis-form-id').value = '';
+        document.getElementById('axis-form-title').innerText = 'محور';
+        document.getElementById('cancel-edit-axis').classList.add('d-none');
+    }
+
+     // --- Indicator Edit Functionality ---
+    function editIndicator(indicatorId) {
+        fetch(`/admin/indicator/${indicatorId}/data`)
+            .then(response => response.json())
+            .then(data => {
+                ensureElementId('#indicator-form input[name="indicator-id"]', 'indicator-id').value = data.id;
+                ensureElementId('#indicator-form select[name="indicator-axis_id"]', 'indicator-axis_id').value = data.axis_id;
+                ensureElementId('#indicator-form input[name="indicator-name"]', 'indicator-name').value = data.name;
+                ensureElementId('#indicator-form input[name="indicator-weight"]', 'indicator-weight').value = data.weight;
+                ensureElementId('#indicator-form textarea[name="indicator-description"]', 'indicator-description').value = data.description;
+                ensureElementId('#indicator-form input[name="indicator-is_active"]', 'indicator-is_active').checked = data.is_active;
+
+                document.getElementById('indicator-form-title').innerText = 'ویرایش شاخص: ' + data.name;
+                document.getElementById('cancel-edit-indicator').classList.remove('d-none');
+                document.getElementById('indicator-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            })
+            .catch(error => console.error('Error fetching indicator data:', error));
+    }
+
+     function resetIndicatorForm() {
+        document.getElementById('indicator-form').reset();
+        ensureElementId('#indicator-form input[name="indicator-id"]', 'indicator-id').value = '';
+        ensureElementId('#indicator-form input[name="indicator-is_active"]', 'indicator-is_active').checked = true;
+        document.getElementById('indicator-form-title').innerText = 'شاخص';
+        document.getElementById('cancel-edit-indicator').classList.add('d-none');
+    }
+
+
+    // --- Measure Edit Functionality ---
+    function editMeasure(measureId) {
+        fetch(`/admin/measure/${measureId}/data`)
+            .then(response => response.json())
+            .then(data => {
+                ensureElementId('#measure-form input[name="measure-id"]', 'measure-id').value = data.id;
+                ensureElementId('#measure-form select[name="measure-indicator_id"]', 'measure-indicator_id').value = data.indicator_id;
+                ensureElementId('#measure-form input[name="measure-name"]', 'measure-name').value = data.name;
+                ensureElementId('#measure-form input[name="measure-weight"]', 'measure-weight').value = data.weight;
+                ensureElementId('#measure-form textarea[name="measure-description"]', 'measure-description').value = data.description;
+                ensureElementId('#measure-form input[name="measure-is_active"]', 'measure-is_active').checked = data.is_active;
+
+                document.getElementById('measure-form-title').innerText = 'ویرایش سنجه: ' + data.name;
+                document.getElementById('cancel-edit-measure').classList.remove('d-none');
+                document.getElementById('measure-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            })
+            .catch(error => console.error('Error fetching measure data:', error));
+    }
+
+     function resetMeasureForm() {
+        document.getElementById('measure-form').reset();
+        ensureElementId('#measure-form input[name="measure-id"]', 'measure-id').value = '';
+        ensureElementId('#measure-form input[name="measure-is_active"]', 'measure-is_active').checked = true;
+        document.getElementById('measure-form-title').innerText = 'سنجه';
+        document.getElementById('cancel-edit-measure').classList.add('d-none');
+    }
+
+
+    // Add event listeners or setup after DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure all necessary elements have IDs for the JS functions to work reliably
+        ensureElementId('#axis-form input[name="axis-id"]', 'axis-form-id');
+        ensureElementId('#axis-form input[name="axis-name"]', 'axis-name');
+        ensureElementId('#axis-form textarea[name="axis-description"]', 'axis-description');
+
+        ensureElementId('#indicator-form input[name="indicator-id"]', 'indicator-id');
+        ensureElementId('#indicator-form select[name="indicator-axis_id"]', 'indicator-axis_id');
+        ensureElementId('#indicator-form input[name="indicator-name"]', 'indicator-name');
+        ensureElementId('#indicator-form input[name="indicator-weight"]', 'indicator-weight');
+        ensureElementId('#indicator-form textarea[name="indicator-description"]', 'indicator-description');
+        ensureElementId('#indicator-form input[name="indicator-is_active"]', 'indicator-is_active');
+
+        ensureElementId('#measure-form input[name="measure-id"]', 'measure-id');
+        ensureElementId('#measure-form select[name="measure-indicator_id"]', 'measure-indicator_id');
+        ensureElementId('#measure-form input[name="measure-name"]', 'measure-name');
+        ensureElementId('#measure-form input[name="measure-weight"]', 'measure-weight');
+        ensureElementId('#measure-form textarea[name="measure-description"]', 'measure-description');
+        ensureElementId('#measure-form input[name="measure-is_active"]', 'measure-is_active');
+
+    });
+
+</script>
+{% endblock %}
+

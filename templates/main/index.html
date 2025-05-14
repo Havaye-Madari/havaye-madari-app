@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}سامانه هوای مادری - صفحه اصلی{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1 class="display-5 fw-bold mb-4">به سامانه هوای مادری خوش آمدید</h1>
+    <p class="lead text-muted mb-4">
+        این سامانه به شما کمک می‌کند تا فرآیند ارزیابی را بر اساس محورها، شاخص‌ها و سنجه‌های تعریف‌شده مدیریت کنید.
+    </p>
+    <a href="{{ url_for('admin.manage_hierarchy') }}" class="btn btn-primary btn-lg px-4 me-2">
+        <i class="fas fa-sitemap me-1"></i> مدیریت ساختار ارزیابی
+    </a>
+    {# Corrected endpoint to 'participants.list_participants' #}
+    <a href="{{ url_for('participants.list_participants') }}" class="btn btn-success btn-lg px-4">
+       <i class="fas fa-users me-1"></i> مدیریت شرکت کنندگان
+    </a>
+</div>
+
+<div class="row mt-5 text-center">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm">
+             <div class="card-body d-flex flex-column justify-content-center">
+                 <i class="fas fa-cogs fa-3x text-primary mb-3"></i>
+                <h4 class="card-title section-title">مدیریت ساختار ارزیابی</h4>
+                <p class="card-text text-muted">
+                    محورها، شاخص‌ها و سنجه‌های ارزیابی خود را به صورت سلسله مراتبی تعریف، ویرایش و مدیریت کنید یا از طریق فایل اکسل آپلود نمایید.
+                </p>
+                <a href="{{ url_for('admin.manage_hierarchy') }}" class="btn btn-outline-primary mt-auto">
+                    مدیریت ساختار
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+         <div class="card h-100 shadow-sm">
+             <div class="card-body d-flex flex-column justify-content-center">
+                 <i class="fas fa-file-signature fa-3x text-success mb-3"></i>
+                <h4 class="card-title section-title">مدیریت شرکت کنندگان</h4>
+                <p class="card-text text-muted">
+                    لیست شرکت‌کنندگان را مشاهده کنید، شرکت‌کننده جدید اضافه کنید، امتیازات را ثبت یا ویرایش نمایید و یا امتیازات را از طریق فایل آپلود کنید.
+                </p>
+                 {# Corrected endpoint to 'participants.list_participants' #}
+                 <a href="{{ url_for('participants.list_participants') }}" class="btn btn-outline-success mt-auto">
+                    مدیریت شرکت کنندگان
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

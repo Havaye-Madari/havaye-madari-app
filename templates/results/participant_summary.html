@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}نتایج ارزیابی - {{ summary_data.participant.name if summary_data.participant else "شرکت کننده یافت نشد" }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .chart-container { position: relative; margin: 20px auto; max-width: 650px; width: 90%; aspect-ratio: 4/3; margin-bottom: 2rem; border: 1px solid #eee; padding: 10px; background-color: #fff; }
+    .axis-header { background-color: #e9ecef; padding: 0.75rem 1.25rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .table th, .table td { vertical-align: middle; }
+    canvas { display: block; box-sizing: border-box; height: 100%; width: 100%; }
+    .help-button-container { position: absolute; top: 5px; left: 15px; z-index: 10; } /* Ensure button is clickable */
+    {% if is_participant_view %}
+    body { background-color: #f0f2f5; } /* Light grey background for participant view */
+    .card { border-radius: 15px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important; }
+    .section-title { color: #0056b3; } /* Consistent title color */
+    .main-content-card { margin-top: 1rem; } /* Add some top margin for the card */
+    {% endif %}
+    .attachment-section { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #dee2e6; }
+    .no-participation-message {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #6c757d; /* Muted color */
+        background-color: #f8f9fa; /* Light background */
+        padding: 2rem;
+        border-radius: .5rem;
+        border: 1px dashed #ced4da; /* Dashed border */
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="{% if is_participant_view %}card shadow-sm main-content-card{% endif %}">
+    <div class="{% if is_participant_view %}card-body p-4 p-md-5{% else %}pt-3{% endif %}"> {# Adjust padding for non-card view #}
+
+        {# Title and Help Button #}
+        <div class="position-relative mb-4">
+            <h2 class="section-title mb-0">
+                نتایج ارزیابی برای:
+                {% if summary_data.participant %}
+                    {{ summary_data.participant.name }} ({{ summary_data.participant.phone }})
+                {% else %}
+                    شرکت‌کننده نامشخص
+                {% endif %}
+            </h2>
+            {% if help_text %}
+            <div class="help-button-container">
+                <button type="button" class="btn btn-sm btn-outline-info rounded-pill" data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <i class="fas fa-question-circle me-1"></i> راهنما
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Description Text #}
+        {% if summary_data.participant %} {# Only show if participant data is available #}
+            {% if is_participant_view %}
+                <p class="text-muted">این صفحه امتیازات کسب شده توسط شما را به تفکیک محور و شاخص نمایش می‌دهد.</p>
+            {% else %}
+                <p class="text-muted">این صفحه امتیازات کسب شده توسط این شرکت‌کننده را به تفکیک محور و شاخص نمایش می‌دهد.</p>
+            {% endif %}
+
+            {# Overall Score - Always display this, even if 0 #}
+            <div class="alert alert-info d-flex justify-content-between align-items-center mt-4">
+                {% if is_participant_view %}
+                     <h5 class="mb-0">امتیاز کل شما (بر اساس میانگین وزنی شاخص‌ها):</h5>
+                {% else %}
+                     <h5 class="mb-0">امتیاز کل این شرکت‌کننده (بر اساس میانگین وزنی شاخص‌ها):</h5>
+                {% endif %}
+                <span class="badge bg-primary fs-5">{{ "%.2f"|format(summary_data.overall_score) }} / 5</span>
+            </div>
+
+            {# Conditional display based on all_scores_zero_for_individual #}
+            {% if summary_data.all_scores_zero_for_individual %}
+                <div class="alert alert-warning text-center mt-5 no-participation-message" role="alert">
+                    شما در آزمون شرکت نکرده اید.
+                </div>
+            {% else %}
+                {# Table of Scores #}
+                <h3 class="section-title mt-5">جدول امتیازات</h3>
+                <div class="card shadow-sm mb-5">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>محور / شاخص</th>
+                                        <th class="text-center">وزن شاخص</th>
+                                        <th class="text-center">امتیاز کسب شده (از 5)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if summary_data.axes %}
+                                        {% for axis in summary_data.axes %}
+                                            <tr class="table-secondary">
+                                                <td colspan="2"><strong>محور: {{ axis.name }}</strong></td>
+                                                <td class="text-center"><strong>{{ "%.2f"|format(axis.axis_score) }}</strong></td>
+                                            </tr>
+                                            {% for indicator in axis.indicators %}
+                                            <tr>
+                                                <td class="ps-4">{{ indicator.name }}</td>
+                                                <td class="text-center">{{ indicator.weight }}</td>
+                                                <td class="text-center">{{ "%.2f"|format(indicator.score) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">هنوز هیچ محور یا شاخص فعالی برای نمایش نتایج وجود ندارد.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                                 <tfoot>
+                                     <tr class="table-info">
+                                         {% if is_participant_view %}
+                                            <td colspan="2" class="text-end"><strong>امتیاز کل وزنی شما:</strong></td>
+                                         {% else %}
+                                             <td colspan="2" class="text-end"><strong>امتیاز کل وزنی این شرکت‌کننده:</strong></td>
+                                         {% endif %}
+                                         <td class="text-center"><strong>{{ "%.2f"|format(summary_data.overall_score) }}</strong></td>
+                                     </tr>
+                                 </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {# Charts Section #}
+                <h3 class="section-title mt-5">نمودارهای نتایج</h3>
+                <div class="row">
+                    {% if summary_data.axes %}
+                        {% for axis in summary_data.axes %}
+                             {% if axis.indicators %} {# Only create canvas if axis has indicators #}
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card shadow-sm h-100">
+                                        <div class="card-header axis-header">
+                                            <h5 class="mb-0 text-center">محور: {{ axis.name }}</h5>
+                                        </div>
+                                        <div class="card-body d-flex justify-content-center align-items-center">
+                                            <div class="chart-container">
+                                                <canvas id="chart-axis-{{ axis.id }}"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %} {# Closing if axis.indicators #}
+                        {% endfor %}
+                        {% if not summary_data.axes | selectattr('indicators') | list %}
+                         <div class="col-12"><div class="alert alert-warning text-center">هیچ شاخص فعالی برای رسم نمودار در محورهای موجود یافت نشد.</div></div>
+                        {% endif %}
+                    {% else %}
+                        <div class="col-12"><div class="alert alert-warning text-center">داده‌ای برای رسم نمودار وجود ندارد یا محور/شاخصی تعریف نشده است.</div></div>
+                    {% endif %} {# Closing if summary_data.axes #}
+                </div>
+                {# End Charts Section #}
+            {% endif %} {# Closing if summary_data.all_scores_zero_for_individual (else part) #}
+            {# --- End Conditional display --- #}
+
+            {# Attachment Section (Located after charts or "no participation" message) #}
+            {% if summary_data.participant.attachment_filename %}
+            <div class="attachment-section text-center">
+                <h4 class="section-title mb-3">گواهی دوره</h4>
+                <a href="{{ url_for('participants.view_attachment', filename=summary_data.participant.attachment_filename) }}" target="_blank" class="btn btn-success btn-lg">
+                    <i class="fas fa-download me-2"></i> مشاهده / دانلود گواهی دوره
+                </a>
+                <p class="text-muted small mt-2">({{ summary_data.participant.attachment_filename }})</p>
+            </div>
+            {% elif is_participant_view %} {# Only show this if participant is viewing and has no attachment #}
+             <div class="attachment-section text-center">
+                 <p class="text-muted fst-italic">گواهی دوره‌ای برای شما بارگذاری نشده است.</p>
+             </div>
+            {% endif %} {# Closing if summary_data.participant.attachment_filename #}
+            {# End Attachment Section #}
+
+        {% else %} {# Participant data not available #}
+            <div class="alert alert-danger text-center mt-4">اطلاعات شرکت‌کننده یافت نشد.</div>
+        {% endif %} {# Closing if summary_data.participant #}
+
+
+        {# Conditionally show back button #}
+        {% if not is_participant_view %}
+        <div class="text-center mt-5 mb-3"> {# Added mb-3 for spacing #}
+            <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> بازگشت به لیست شرکت‌کنندگان
+            </a>
+        </div>
+        {% endif %} {# Closing if not is_participant_view #}
+
+    </div> {# End card-body (if participant view) or main div #}
+</div> {# End card (if participant view) #}
+
+
+{# Help Modal #}
+{% if help_text %}
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel"><i class="fas fa-info-circle me-2"></i> راهنمای صفحه نتایج</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="white-space: pre-wrap;">
+        {{ help_text | safe }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {# Closing if help_text #}
+{# End Help Modal #}
+
+{% endblock %} {# Closing block content #}
+
+{% block scripts %}
+{{ super() }}
+{# Conditionally load Chart.js for participant view if scores are not all zero #}
+{# For admin view, Chart.js is already loaded via base.html #}
+{% if is_participant_view and summary_data.participant and not summary_data.all_scores_zero_for_individual %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+{% endif %} {# Closing if is_participant_view... #}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // CORRECTED LINE: Use Jinja/Python conditional to produce Python True/False, then tojson
+        const summaryDataAvailable = {{ (True if summary_data and summary_data.participant else False) | tojson }};
+        const allScoresZero = summaryDataAvailable ? {{ summary_data.all_scores_zero_for_individual | tojson }} : true;
+
+        // Only attempt to render charts if data is available and not all scores are zero
+        if (summaryDataAvailable && !allScoresZero) {
+            console.log("DOM loaded. Attempting to render charts for participant (scores are not all zero).");
+            const isParticipantView = {{ is_participant_view | tojson }};
+
+            // Check if Chart.js library is loaded
+            if (typeof Chart === 'undefined') {
+                console.error("Chart.js library is not loaded. Charts cannot be rendered.");
+                const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                if (chartSectionTitle) {
+                    let chartRowElement = chartSectionTitle.nextElementSibling;
+                    if (chartRowElement && chartRowElement.classList.contains('row')) {
+                         chartRowElement.innerHTML = '<div class="col-12"><div class="alert alert-warning text-center">کتابخانه نمودار بارگذاری نشده است. لطفا صفحه را رفرش کنید یا با پشتیبانی تماس بگیرید.</div></div>';
+                    }
+                }
+                return; // Stop further execution if Chart.js is missing
+            }
+
+            let chartData;
+            try {
+                const chartDataJsonString = {{ chart_data_json | tojson | safe }};
+                if (chartDataJsonString && chartDataJsonString.trim() !== '' && chartDataJsonString !== '{}') {
+                    chartData = JSON.parse(chartDataJsonString);
+                } else {
+                    chartData = {};
+                }
+
+                if (typeof chartData !== 'object' || chartData === null) {
+                    console.warn("Parsed chart data was not a valid object after initial check, defaulting to empty.");
+                    chartData = {};
+                }
+                console.log("Participant Chart Data Parsed:", chartData);
+            } catch (e) {
+                console.error("Error parsing chart data JSON:", e, String({{ chart_data_json | tojson | safe }}));
+                const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                if (chartSectionTitle) {
+                    let nextElem = chartSectionTitle.nextElementSibling;
+                    if (nextElem && nextElem.classList.contains('row')) {
+                         nextElem.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center">خطا در تجزیه داده‌های نمودار (JSON parse error).</div></div>';
+                    }
+                }
+                chartData = {}; 
+            }
+
+            const participantName = {{ summary_data.participant.name | tojson | safe if summary_data.participant else "'شرکت‌کننده'" | tojson | safe }};
+
+            if (Object.keys(chartData).length === 0) {
+                console.warn("Participant chart data object is empty. No charts will be rendered by JS.");
+                 const chartSectionTitle = Array.from(document.querySelectorAll('h3.section-title')).find(el => el.textContent.includes('نمودارهای نتایج'));
+                 if (chartSectionTitle) {
+                        let chartRowElement = chartSectionTitle.nextElementSibling;
+                        if (chartRowElement && chartRowElement.classList.contains('row')) {
+                             if (!chartRowElement.querySelector('.alert-danger')) {
+                                chartRowElement.innerHTML = '<div class="col-12"><div class="alert alert-info text-center">داده‌ای برای رسم نمودار وجود ندارد.</div></div>';
+                             }
+                        }
+                    }
+                return; 
+            }
+
+            for (const axisId in chartData) {
+                if (chartData.hasOwnProperty(axisId)) {
+                    const axisData = chartData[axisId];
+                    const canvasId = `chart-axis-${axisId}`;
+                    const ctx = document.getElementById(canvasId);
+
+                    if (!ctx) {
+                        console.error(`Canvas element with ID ${canvasId} not found for axis ${axisData.name}.`);
+                        const chartCardContainer = document.querySelector(`#chart-axis-${axisId}`)?.closest('.col-lg-6 .card .card-body .chart-container');
+                        if (chartCardContainer) {
+                            chartCardContainer.innerHTML = '<div class="alert alert-warning text-center p-3">خطا: عنصر بوم نقاشی برای این نمودار یافت نشد.</div>';
+                        }
+                        continue;
+                    }
+                    console.log(`Processing Axis ID: ${axisId}, Name: ${axisData.name} for participant`);
+
+                    const labels = axisData.labels;
+                    const participantScores = axisData.participant_or_avg_scores;
+                    const overallAvgScores = axisData.overall_indicator_averages;
+
+                    if (!labels || labels.length === 0 ||
+                        !participantScores || participantScores.length === 0 ||
+                        !overallAvgScores || overallAvgScores.length === 0 ||
+                        labels.length !== participantScores.length ||
+                        labels.length !== overallAvgScores.length) {
+
+                        console.warn(`Inconsistent or missing data for axis ${axisData.name}. Skipping chart.`, axisData);
+                        const context = ctx.getContext('2d');
+                        context.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                        context.font = "14px Vazirmatn";
+                        context.textAlign = "center";
+                        context.fillStyle = "#6c757d";
+                        context.fillText("داده‌های این نمودار ناقص یا ناموجود است.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                        continue;
+                    }
+
+                    let chartType = (labels.length > 2) ? 'radar' : 'bar';
+                    console.log(`Creating ${chartType} chart for Axis ID: ${axisId}`);
+
+                    const datasets = [
+                        {
+                            label: isParticipantView ? 'امتیاز شما' : `امتیاز ${participantName}`,
+                            data: participantScores,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgb(54, 162, 235)',
+                            borderWidth: 1.5,
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            order: 2 
+                        },
+                        {
+                            label: 'میانگین کل (همه شرکت‌کنندگان)',
+                            data: overallAvgScores,
+                            borderColor: 'rgb(255, 99, 132)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)', 
+                            pointBackgroundColor: 'rgb(255, 99, 132)',
+                            borderWidth: (chartType === 'bar') ? 2 : 1.5, 
+                            type: (chartType === 'bar') ? 'line' : undefined, 
+                            order: 1, 
+                            tension: 0.1 
+                        }
+                    ];
+
+                    const config = {
+                        type: chartType,
+                        data: {
+                            labels: labels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { font: { family: 'Vazirmatn' } }
+                                },
+                                title: { display: false },
+                                tooltip: {
+                                    bodyFont: { family: 'Vazirmatn' },
+                                    titleFont: { family: 'Vazirmatn' }
+                                }
+                            },
+                            scales: {
+                                r: (chartType === 'radar') ? {
+                                    beginAtZero: true,
+                                    max: 5,
+                                    angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                                    pointLabels: { font: { size: 11, family: 'Vazirmatn' } },
+                                    ticks: {
+                                        stepSize: 1,
+                                        backdropColor: 'rgba(255, 255, 255, 0.75)',
+                                        font: { family: 'Vazirmatn'}
+                                    }
+                                } : undefined,
+                                y: (chartType === 'bar') ? {
+                                    beginAtZero: true,
+                                    max: 5,
+                                    grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                                    ticks: { stepSize: 1, font: { family: 'Vazirmatn' } }
+                                } : undefined,
+                                x: (chartType === 'bar') ? {
+                                    grid: { display: false },
+                                    ticks: { font: { family: 'Vazirmatn' } }
+                                } : undefined
+                            }
+                        }
+                    };
+
+                    try {
+                        const existingChart = Chart.getChart(canvasId);
+                        if (existingChart) {
+                            existingChart.destroy();
+                        }
+                        new Chart(ctx, config);
+                        console.log(`Chart ${canvasId} created successfully.`);
+                    } catch (e) {
+                        console.error(`Error creating chart for axis ${axisId}:`, e);
+                        const context = ctx.getContext('2d');
+                        context.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                        context.font = "14px Vazirmatn";
+                        context.textAlign = "center";
+                        context.fillStyle = "#dc3545";
+                        context.fillText("خطا در رسم نمودار.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    }
+                } // Closing if (chartData.hasOwnProperty(axisId))
+            } // Closing for (const axisId in chartData)
+        } else { // Closing if (summaryDataAvailable && !allScoresZero)
+            console.log("Participant data not fully available or all scores are zero. Charts will not be rendered via JS.");
+        }
+    });
+</script>
+{% endblock %} {# Closing block scripts #}

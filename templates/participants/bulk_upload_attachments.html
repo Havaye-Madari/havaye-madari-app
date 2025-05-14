@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}آپلود یکجای پیوست‌های شرکت‌کنندگان{% endblock %}
+
+{% block content %}
+<h2 class="section-title mb-4">آپلود یکجای فایل‌های پیوست (گواهی دوره)</h2>
+
+{# Flash messages are handled by base.html if conditions are met #}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> راهنمای آپلود یکجا</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">
+            در این بخش می‌توانید چندین فایل پیوست (مثلاً گواهی دوره) را به صورت همزمان آپلود کنید.
+            سیستم به طور خودکار هر فایل را بر اساس نام آن (که باید شماره تلفن شرکت‌کننده باشد) به شرکت‌کننده مربوطه اختصاص می‌دهد.
+        </p>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item">
+                <strong>نام‌گذاری فایل‌ها:</strong> نام هر فایل باید <strong>دقیقاً شماره تلفن شرکت‌کننده</strong> به همراه پسوند فایل باشد.
+                <br>
+                <small class="text-muted">مثال: <code>09123456789.pdf</code> یا <code>09350000000.jpg</code></small>
+            </li>
+            <li class="list-group-item">
+                <strong>پسوندهای مجاز:</strong> <code>pdf</code>, <code>jpg</code>, <code>jpeg</code>, <code>png</code>, <code>gif</code>.
+            </li>
+            <li class="list-group-item">
+                <strong>جایگزینی فایل:</strong> در صورتی که شرکت‌کننده‌ای از قبل فایل پیوست داشته باشد، فایل جدید آپلود شده <strong>جایگزین</strong> فایل قبلی خواهد شد.
+            </li>
+            <li class="list-group-item">
+                <strong>شرکت‌کننده ناموجود:</strong> اگر شرک‌تکننده‌ای با شماره تلفن موجود در نام فایل در سیستم یافت نشود، آن فایل نادیده گرفته شده و آپلود نخواهد شد.
+            </li>
+        </ul>
+        <hr>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('participants.bulk_upload_attachments') }}">
+            {{ form.hidden_tag() }} {# CSRF token #}
+            <div class="mb-3">
+                {{ form.attachments.label(class="form-label fw-bold") }}
+                {# خصوصیت multiple به کاربر اجازه انتخاب چندین فایل را می‌دهد #}
+                {{ form.attachments(class="form-control form-control-lg" + (" is-invalid" if form.attachments.errors else ""), multiple=True) }}
+                {% if form.attachments.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.attachments.errors %}
+                            <span>{{ error }}</span><br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted mt-1">می‌توانید چندین فایل را به طور همزمان انتخاب کنید (با نگه داشتن کلید Ctrl یا Shift هنگام انتخاب).</small>
+            </div>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                {{ form.submit(class="btn btn-primary btn-lg px-4") }}
+                <a href="{{ url_for('participants.list_participants') }}" class="btn btn-secondary btn-lg px-4 ms-md-2 mt-2 mt-md-0">بازگشت به لیست</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
